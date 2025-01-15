@@ -1,7 +1,8 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Settings, Eye, EyeOff, GripVertical, Book, File, MessageSquare, Link2 } from "lucide-react";
-import type { Activity, Resource } from './types/course';
+import { Activity, Resource } from '@/types/moodle';
+
 
 interface ContentItemBaseProps {
   name: string;

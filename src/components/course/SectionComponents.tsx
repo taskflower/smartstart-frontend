@@ -2,7 +2,7 @@ import React from 'react';
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Eye, EyeOff, GripVertical } from "lucide-react";
-import type { Section } from './types/course';
+import { Section } from '@/types/moodle';
 
 interface SectionHeaderProps {
   name: string;

@@ -1,39 +1,56 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-// types/course.ts
+import type { Course, Section, Activity, Resource } from "@/types/moodle";
 
-export interface Course {
-    id: string;
-    name: string;
-    description: string;
-    category_id: string;
-  }
-  
-  export interface Section {
-    id: string;
-    name: string;
-    course_id: string;
-    type: 'topic' | 'weekly';
-    sequence: number;
-    visible: boolean;
-  }
-  
-  export interface Activity {
-    id: string;
-    type: 'quiz' | 'assignment' | 'forum';
-    name: string;
-    description: string;
-    settings: any;
-    section_id: string;
-    visible: boolean;
-    sequence: number;
-  }
-  
-  export interface Resource {
-    id: string;
-    type: 'file' | 'url' | 'page';
-    name: string;
-    content: string;
-    section_id: string;
-    visible: boolean;
-    sequence: number;
-  }
+export type CoursePageState = {
+  course: Course | null;
+  sections: Section[];
+  activities: Activity[];
+  resources: Resource[];
+  loading: boolean;
+  error: string | null;
+  selectedSectionId: string | null;
+  isAddContentOpen: boolean;
+};
+
+
+
+export type AddSectionData = {
+  name: string;
+};
+
+export type AddActivityData = {
+  type: Activity["type"];
+  name: string;
+  description: string;
+};
+
+export type AddResourceData = {
+  type: Resource["type"];
+  name: string;
+  content: string;
+};
+
+export type VisibilityToggleType = "section" | "activity" | "resource";
+
+export interface ContentItemBaseProps {
+  name: string;
+  visible: boolean;
+  onToggleVisibility: () => void;
+  onOpenSettings: () => void;
+}
+
+export interface SectionHeaderProps {
+  name: string;
+  visible: boolean;
+  onToggleVisibility: () => void;
+  onAddContent: () => void;
+}
+
+export interface SectionContentProps {
+  children: React.ReactNode;
+}
+
+export interface SectionCardProps extends Section {
+  onToggleVisibility: () => void;
+  onAddContent: () => void;
+  children: React.ReactNode;
+}

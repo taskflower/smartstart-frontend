@@ -1,9 +1,10 @@
-// Podstawowe typy aktywności i zasobów
-export type ActivityType = 'quiz' | 'assignment' | 'forum';
-export type ResourceType = 'file' | 'url' | 'page';
-export type SectionType = 'weekly' | 'topic';
+// Podstawowe typy
 
-// Interfejsy dla głównych encji
+export type ActivityType = "quiz" | "assignment" | "forum";
+export type ResourceType = "file" | "url" | "page";
+export type SectionType = "weekly" | "topic";
+
+// Kursy
 export interface Course {
   id: string;
   name: string;
@@ -13,6 +14,7 @@ export interface Course {
   updated_at: Date;
 }
 
+// Sekcje
 export interface Section {
   id: string;
   course_id: string;
@@ -25,6 +27,9 @@ export interface Section {
   updated_at: Date;
 }
 
+
+
+// Aktywności
 export interface Activity {
   id: string;
   section_id: string;
@@ -38,22 +43,8 @@ export interface Activity {
   updated_at: Date;
 }
 
-export interface Resource {
-  id: string;
-  section_id: string;
-  type: ResourceType;
-  name: string;
-  description?: string;
-  content: string; // URL dla typu 'url', treść dla typu 'page', link do storage dla typu 'file'
-  sequence: number;
-  visible: boolean;
-  created_at: Date;
-  updated_at: Date;
-}
-
-// Ustawienia specyficzne dla różnych typów aktywności
 export interface QuizSettings {
-  time_limit?: number; // w minutach
+  time_limit?: number;
   attempts_allowed: number;
   passing_grade: number;
   shuffle_questions: boolean;
@@ -63,22 +54,59 @@ export interface QuizSettings {
 export interface AssignmentSettings {
   due_date?: Date;
   max_points: number;
-  submission_type: 'text' | 'file' | 'both';
+  submission_type: "text" | "file" | "both";
   allow_late_submissions: boolean;
 }
 
 export interface ForumSettings {
-  type: 'standard' | 'single' | 'qanda';
+  type: "standard" | "single" | "qanda";
   grade_category?: string;
   max_attachments: number;
 }
 
+// Zasoby
+export interface Resource {
+  id: string;
+  section_id: string;
+  type: ResourceType;
+  name: string;
+  description?: string;
+  content: string; // URL dla "url", treść dla "page", link do pliku dla "file"
+  sequence: number;
+  visible: boolean;
+  created_at: Date;
+  updated_at: Date;
+}
+
+// Dokumenty edukacyjne
+export interface EducationalDocument {
+  id: string;
+  language: string;
+  schoolType: SchoolType;
+  educationLevel: string;
+  textbook: string;
+  topic: string;
+  content: string;
+  createdAt: Date;
+  updatedAt: Date;
+  authorId: string;
+}
+
+export enum SchoolType {
+  PRIMARY = "PRIMARY",
+  SECONDARY = "SECONDARY",
+  TECHNICAL = "TECHNICAL",
+  VOCATIONAL = "VOCATIONAL",
+}
+
 // Pytania i odpowiedzi (dla quizów)
+export type QuestionType = "multiple_choice" | "true_false" | "short_answer";
+
 export interface Question {
   id: string;
-  activity_id: string; // Powiązane z quiz
+  activity_id: string; // Powiązane z quizem
   question_text: string;
-  question_type: 'multiple_choice' | 'true_false' | 'short_answer';
+  question_type: QuestionType;
   default_grade: number;
   created_at: Date;
   updated_at: Date;
