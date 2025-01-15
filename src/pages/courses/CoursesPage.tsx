@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { collection, getDocs } from "firebase/firestore";
-import { db } from "../services/firebase";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import AuthLayout from "@/components/AuthLayout";
+import { db } from "@/services/firebase";
 
 interface Course {
   id: string;
