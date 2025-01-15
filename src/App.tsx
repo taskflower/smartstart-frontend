@@ -15,6 +15,8 @@ import AnswersPage from "./pages/AnswersPage";
 import CreateCoursePage from "./pages/CreateCoursePage";
 import CoursePage from "./pages/CoursePage"; // Dodaj ten import
 import CoursesPage from "./pages/CoursesPage";
+import CareerPathPage from "./pages/CareerPathPage";
+import InterdisciplinaryPage from "./pages/InterdisciplinaryPage";
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuthState();
@@ -110,6 +112,23 @@ export default function App() {
           element={
             <PrivateRoute>
               <CoursesPage />
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/path"
+          element={
+            <PrivateRoute>
+              <CareerPathPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/inter"
+          element={
+            <PrivateRoute>
+              <InterdisciplinaryPage />
             </PrivateRoute>
           }
         />

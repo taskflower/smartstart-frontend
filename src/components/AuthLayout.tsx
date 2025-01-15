@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -7,12 +7,34 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { GraduationCap, LogOut, User, LayoutDashboard, BookOpen, Files, PenSquare } from "lucide-react";
+import {
+  GraduationCap,
+  LogOut,
+  User,
+  LayoutDashboard,
+  BookOpen,
+  Files,
+  PenSquare,
+  Route,
+  Goal,
+} from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { signOut } from "../services/auth";
 import { useAuthState } from "../hooks/useAuthState";
 import { useIsMobile } from "../hooks/use-mobile";
 import { cn } from "@/services/utils";
+import { Separator } from "@/components/ui/separator";
+
+type NavItem =
+  | {
+      type: "link";
+      name: string;
+      href: string;
+      icon: React.FC<React.SVGProps<SVGSVGElement>>;
+    }
+  | {
+      type: "separator";
+    };
 
 interface AuthLayoutProps {
   children: React.ReactNode;
@@ -33,26 +55,45 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
     }
   };
 
-  const navigation = [
+  const navigation: NavItem[] = [
     {
+      type: "link",
       name: "Dashboard",
       href: "/dashboard",
       icon: LayoutDashboard,
     },
     {
+      type: "link",
       name: "Kursy",
       href: "/courses",
       icon: BookOpen,
     },
     {
+      type: "link",
       name: "Kategorie",
       href: "/categories",
       icon: Files,
     },
     {
+      type: "link",
       name: "Bank pytań",
       href: "/questions",
       icon: PenSquare,
+    },
+    {
+      type: "separator",
+    },
+    {
+      type: "link",
+      name: "Podróż do Celu",
+      href: "/path",
+      icon: Goal,
+    },
+    {
+      type: "link",
+      name: "Trasa podróży",
+      href: "/inter",
+      icon: Route,
     },
   ];
 
@@ -63,13 +104,18 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
         <div className="flex h-14 items-center px-4 md:px-6">
           <div className="flex items-center space-x-4">
             <GraduationCap className="h-6 w-6" />
-            <span className="font-bold hidden md:inline-block">SmartStart Content Bridge</span>
+            <span className="font-bold hidden md:inline-block">
+              SmartStart Knowledge Hub
+            </span>
           </div>
-          
+
           <div className="ml-auto flex items-center space-x-4">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                <Button
+                  variant="ghost"
+                  className="relative h-8 w-8 rounded-full"
+                >
                   <User className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
@@ -96,15 +142,19 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
 
       <div className="flex">
         {/* Sidebar */}
-        <div className={cn(
-          "hidden md:flex h-screen w-64 flex-col fixed left-0",
-          "border-r bg-background"
-        )}>
+        <div
+          className={cn(
+            "hidden md:flex h-screen w-64 flex-col fixed left-0",
+            "border-r bg-background"
+          )}
+        >
           <div className="flex flex-col space-y-1 p-4">
-            {navigation.map((item) => {
-              const Icon = item.icon;
+            {navigation.map((item, index) => {
+              if (item.type === "separator") {
+                return <Separator key={`sep-${index}`} className="my-2" />;
+              }
               const isActive = location.pathname === item.href;
-              
+              const Icon = item.icon;
               return (
                 <Button
                   key={item.name}
@@ -124,13 +174,15 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
         {isMobile && (
           <div className="fixed bottom-0 left-0 right-0 border-t bg-background z-50">
             <div className="flex justify-around p-2">
-              {navigation.map((item) => {
-                const Icon = item.icon;
+              {navigation.map((item, index) => {
+                if (item.type === "separator") {
+                  return null;
+                }
                 const isActive = location.pathname === item.href;
-                
+                const Icon = item.icon;
                 return (
                   <Button
-                    key={item.name}
+                    key={item.name || `sep-${index}`}
                     variant={isActive ? "secondary" : "ghost"}
                     size="icon"
                     onClick={() => navigate(item.href)}
@@ -144,11 +196,13 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
         )}
 
         {/* Main Content */}
-        <main className={cn(
-          "flex-1",
-          "md:ml-64", // Offset for sidebar
-          isMobile ? "mb-16" : "" // Space for mobile navigation
-        )}>
+        <main
+          className={cn(
+            "flex-1 px-4 md:px-6", // Dodaj poziomy padding w mobile i większy w md
+            "md:ml-64", // Przesunięcie dla sidebara
+            isMobile ? "mb-16" : "" // Odstęp na dole, by nie zasłaniała go dolna nawigacja
+          )}
+        >
           {children}
         </main>
       </div>

@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { collection, getDocs, addDoc, query, where } from 'firebase/firestore';
 import { db } from '../services/firebase';
 import { Question, Answer } from '../types/moodle';
+import AuthLayout from '@/components/AuthLayout';
 
 export default function AnswersPage() {
   const { questionId } = useParams();
@@ -64,6 +65,7 @@ export default function AnswersPage() {
   };
 
   return (
+    <AuthLayout>
     <div className="p-8">
       <div className="mb-6">
         <h1 className="text-2xl font-bold">Odpowiedzi</h1>
@@ -106,5 +108,6 @@ export default function AnswersPage() {
         ))}
       </div>
     </div>
+     </AuthLayout>
   );
 }
