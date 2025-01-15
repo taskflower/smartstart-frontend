@@ -1,281 +1,213 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment */
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
+import type {
+  Activity,
+  Resource,
+  CoursePageState,
+  AddSectionData,
+  AddActivityData,
+  AddResourceData,
+  VisibilityToggleType,
+} from "@/types/moodle";
+import AuthLayout from "@/components/AuthLayout";
+import { Alert } from "@/components/ui/alert";
 import CourseHeader from "@/components/course/CourseHeader";
 import { SectionCard } from "@/components/course/SectionComponents";
 import { ActivityItem, ResourceItem } from "@/components/course/ContentItems";
 import { AddContentDialog } from "@/components/course/AddContentDialog";
-import { Alert } from "@/components/ui/alert";
-
-import AuthLayout from "@/components/AuthLayout";
-import { db } from "@/services/firebase";
+import ActivitySettingsDialog from "@/components/course/ActivitySettingsDialog";
+import ResourceSettingsDialog from "@/components/course/ResourceSettingsDialog";
 import {
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  query,
-  where,
-  addDoc,
-  updateDoc,
-} from "firebase/firestore";
-import { Activity, Course, Resource, Section } from "@/types/moodle";
-import ActivitySettingsDialog from "@/components/course/ActivitySettingsDialog"; // <--- NOWY IMPORT
+  fetchCourse,
+  fetchSections,
+  fetchActivities,
+  fetchResources,
+  addSection,
+  addActivity,
+  addResource,
+  toggleVisibility,
+} from "@/services/courseService";
 
 const CoursePage = () => {
   const { courseId } = useParams<{ courseId: string }>();
-  const [course, setCourse] = useState<Course | null>(null);
-  const [sections, setSections] = useState<Section[]>([]);
-  const [activities, setActivities] = useState<Activity[]>([]);
-  const [resources, setResources] = useState<Resource[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [selectedSectionId, setSelectedSectionId] = useState<string | null>(null);
-  const [isAddContentOpen, setIsAddContentOpen] = useState(false);
+  const [state, setState] = useState<CoursePageState>({
+    course: null,
+    sections: [],
+    activities: [],
+    resources: [],
+    loading: true,
+    error: null,
+    selectedSectionId: null,
+    isAddContentOpen: false,
+  });
 
-  // --- NOWE STANY DLA DIALOGU USTAWIEŃ ---
+  // UI state for dialogs
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
-
-  const handleOpenSettings = (activity: Activity) => {
-    setSelectedActivity(activity);
-    setIsSettingsOpen(true);
-  };
+  const [isResourceSettingsOpen, setIsResourceSettingsOpen] = useState(false);
+  const [selectedActivity, setSelectedActivity] = useState<Activity | null>(
+    null
+  );
+  const [selectedResource, setSelectedResource] = useState<Resource | null>(
+    null
+  );
 
   useEffect(() => {
-    const loadCourseData = async () => {
-      if (!courseId) {
-        setLoading(false);
-        setError("Nie podano ID kursu");
-        return;
-      }
-
-      setLoading(true);
-      setError(null);
-
-      try {
-        // 1. Pobierz kurs
-        const courseRef = doc(db, "courses", courseId);
-        const courseSnap = await getDoc(courseRef);
-
-        if (!courseSnap.exists()) {
-          setError("Kurs nie istnieje");
-          setLoading(false);
-          return;
-        }
-
-        const courseData = { id: courseId, ...courseSnap.data() } as Course;
-        setCourse(courseData);
-
-        // 2. Pobierz sekcje (bez orderBy, żeby nie wymagać indeksu)
-        const sectionsQuery = query(
-          collection(db, "sections"),
-          where("course_id", "==", courseId)
-        );
-        const sectionsSnap = await getDocs(sectionsQuery);
-        const sectionsData = sectionsSnap.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        })) as Section[];
-
-        setSections(sectionsData);
-
-        // 3. Pobierz aktywności i zasoby (też bez orderBy)
-        if (sectionsData.length > 0) {
-          const sectionIds = sectionsData.map((s) => s.id);
-
-          // Pobierz aktywności
-          const activitiesQuery = query(
-            collection(db, "activities"),
-            where("section_id", "in", sectionIds)
-          );
-
-          // Pobierz zasoby
-          const resourcesQuery = query(
-            collection(db, "resources"),
-            where("section_id", "in", sectionIds)
-          );
-
-          const [activitiesSnap, resourcesSnap] = await Promise.all([
-            getDocs(activitiesQuery),
-            getDocs(resourcesQuery),
-          ]);
-
-          setActivities(
-            activitiesSnap.docs.map((doc) => ({
-              id: doc.id,
-              ...doc.data(),
-            })) as Activity[]
-          );
-
-          setResources(
-            resourcesSnap.docs.map((doc) => ({
-              id: doc.id,
-              ...doc.data(),
-            })) as Resource[]
-          );
-        }
-      } catch (err) {
-        console.error("Błąd podczas ładowania danych:", err);
-        setError(
-          err instanceof Error
-            ? err.message
-            : "Wystąpił błąd podczas ładowania kursu"
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
-
     loadCourseData();
   }, [courseId]);
 
-  const handleAddSection = async (data: { name: string }) => {
+  const loadCourseData = async () => {
+    if (!courseId) {
+      setState((prev) => ({
+        ...prev,
+        error: "Nie podano ID kursu",
+        loading: false,
+      }));
+      return;
+    }
+
+    try {
+      setState((prev) => ({ ...prev, loading: true, error: null }));
+
+      const [course, sections] = await Promise.all([
+        fetchCourse(courseId),
+        fetchSections(courseId),
+      ]);
+
+      if (!course) {
+        setState((prev) => ({
+          ...prev,
+          error: "Kurs nie istnieje",
+          loading: false,
+        }));
+        return;
+      }
+
+      const sectionIds = sections.map((s) => s.id);
+      const [activities, resources] = await Promise.all([
+        fetchActivities(sectionIds),
+        fetchResources(sectionIds),
+      ]);
+
+      setState((prev) => ({
+        ...prev,
+        course,
+        sections,
+        activities,
+        resources,
+        loading: false,
+      }));
+    } catch (err) {
+      console.error("Błąd podczas ładowania danych:", err);
+      setState((prev) => ({
+        ...prev,
+        error:
+          err instanceof Error
+            ? err.message
+            : "Wystąpił błąd podczas ładowania kursu",
+        loading: false,
+      }));
+    }
+  };
+
+  const handleAddSection = async (data: AddSectionData) => {
     if (!courseId) return;
 
     try {
-      const newSection = {
-        course_id: courseId,
-        name: data.name,
-        type: "standard" as const,
-        sequence: sections.length,
-        visible: true,
-        created_at: new Date(),
-        updated_at: new Date(),
-      };
-
-      const docRef = await addDoc(collection(db, "sections"), newSection);
-      // @ts-ignore
-      setSections((prev) => [...prev, { ...newSection, id: docRef.id }]);
-      setError(null);
+      const newSection = await addSection(courseId, data);
+      setState((prev) => ({
+        ...prev,
+        sections: [...prev.sections, newSection],
+        error: null,
+      }));
     } catch (err) {
       console.error("Error adding section:", err);
-      setError("Nie udało się dodać sekcji");
+      setState((prev) => ({ ...prev, error: "Nie udało się dodać sekcji" }));
     }
   };
 
   const handleAddActivity = async (
     sectionId: string,
-    data: { type: Activity["type"]; name: string; description: string }
+    data: AddActivityData
   ) => {
     try {
-      const sectionActivities = activities.filter(
-        (a) => a.section_id === sectionId
-      );
-      const newActivity = {
-        section_id: sectionId,
-        type: data.type,
-        name: data.name,
-        description: data.description,
-        sequence: sectionActivities.length,
-        visible: true,
-        settings: getDefaultActivitySettings(data.type),
-        created_at: new Date(),
-        updated_at: new Date(),
-      };
-
-      const docRef = await addDoc(collection(db, "activities"), newActivity);
-      // @ts-ignore
-      setActivities((prev) => [...prev, { ...newActivity, id: docRef.id }]);
-      setError(null);
+      const newActivity = await addActivity(sectionId, data);
+      setState((prev) => ({
+        ...prev,
+        activities: [...prev.activities, newActivity],
+        error: null,
+        isAddContentOpen: false,
+      }));
     } catch (err) {
       console.error("Error adding activity:", err);
-      setError("Nie udało się dodać aktywności");
+      setState((prev) => ({
+        ...prev,
+        error: "Nie udało się dodać aktywności",
+      }));
     }
   };
 
   const handleAddResource = async (
     sectionId: string,
-    data: { type: Resource["type"]; name: string; content: string }
+    data: AddResourceData
   ) => {
     try {
-      const sectionResources = resources.filter(
-        (r) => r.section_id === sectionId
-      );
-      const newResource = {
-        section_id: sectionId,
-        type: data.type,
-        name: data.name,
-        content: data.content,
-        sequence: sectionResources.length,
-        visible: true,
-        created_at: new Date(),
-        updated_at: new Date(),
-      };
-
-      const docRef = await addDoc(collection(db, "resources"), newResource);
-      setResources((prev) => [...prev, { ...newResource, id: docRef.id }]);
-      setError(null);
+      const newResource = await addResource(sectionId, data);
+      setState((prev) => ({
+        ...prev,
+        resources: [...prev.resources, newResource],
+        error: null,
+        isAddContentOpen: false,
+      }));
     } catch (err) {
       console.error("Error adding resource:", err);
-      setError("Nie udało się dodać zasobu");
+      setState((prev) => ({ ...prev, error: "Nie udało się dodać zasobu" }));
     }
   };
 
   const handleToggleVisibility = async (
-    type: "section" | "activity" | "resource",
+    type: VisibilityToggleType,
     id: string,
     currentVisibility: boolean
   ) => {
     try {
-      const collectionName = `${type}s`;
-      const docRef = doc(db, collectionName, id);
+      await toggleVisibility(type, id, currentVisibility);
 
-      await updateDoc(docRef, {
-        visible: !currentVisibility,
-        updated_at: new Date(),
+      setState((prev) => {
+        switch (type) {
+          case "section":
+            return {
+              ...prev,
+              sections: prev.sections.map((item) =>
+                item.id === id ? { ...item, visible: !currentVisibility } : item
+              ),
+              error: null,
+            };
+          case "activity":
+            return {
+              ...prev,
+              activities: prev.activities.map((item) =>
+                item.id === id ? { ...item, visible: !currentVisibility } : item
+              ),
+              error: null,
+            };
+          case "resource":
+            return {
+              ...prev,
+              resources: prev.resources.map((item) =>
+                item.id === id ? { ...item, visible: !currentVisibility } : item
+              ),
+              error: null,
+            };
+          default:
+            return prev;
+        }
       });
-
-      switch (type) {
-        case "section":
-          setSections((prev) =>
-            prev.map((s) =>
-              s.id === id ? { ...s, visible: !currentVisibility } : s
-            )
-          );
-          break;
-        case "activity":
-          setActivities((prev) =>
-            prev.map((a) =>
-              a.id === id ? { ...a, visible: !currentVisibility } : a
-            )
-          );
-          break;
-        case "resource":
-          setResources((prev) =>
-            prev.map((r) =>
-              r.id === id ? { ...r, visible: !currentVisibility } : r
-            )
-          );
-          break;
-      }
-      setError(null);
     } catch (err) {
       console.error("Error toggling visibility:", err);
-      setError("Nie udało się zmienić widoczności");
-    }
-  };
-
-  const getDefaultActivitySettings = (type: Activity["type"]) => {
-    switch (type) {
-      case "quiz":
-        return {
-          timeLimit: 60,
-          attemptsAllowed: 1,
-          passingGrade: 50,
-          shuffleQuestions: false,
-        };
-      case "assignment":
-        return {
-          dueDate: null,
-          maxPoints: 100,
-          submissionType: "file",
-        };
-      case "forum":
-        return {
-          type: "general",
-          allowAttachments: true,
-        };
+      setState((prev) => ({
+        ...prev,
+        error: "Nie udało się zmienić widoczności",
+      }));
     }
   };
 
@@ -289,7 +221,7 @@ const CoursePage = () => {
     );
   }
 
-  if (loading) {
+  if (state.loading) {
     return (
       <AuthLayout>
         <div className="p-8">Ładowanie kursu...</div>
@@ -297,7 +229,7 @@ const CoursePage = () => {
     );
   }
 
-  if (!course) {
+  if (!state.course) {
     return (
       <AuthLayout>
         <div className="p-8">
@@ -311,14 +243,14 @@ const CoursePage = () => {
     <AuthLayout>
       <div className="p-8">
         <CourseHeader
-          courseName={course.name}
-          courseDescription={course.description}
-          error={error}
+          courseName={state.course.name}
+          courseDescription={state.course.description}
+          error={state.error}
           onAddSection={handleAddSection}
         />
 
         <div className="space-y-6">
-          {sections.map((section) => (
+          {state.sections.map((section) => (
             <SectionCard
               key={section.id}
               {...section}
@@ -326,15 +258,16 @@ const CoursePage = () => {
                 handleToggleVisibility("section", section.id, section.visible)
               }
               onAddContent={() => {
-                setSelectedSectionId(section.id);
-                setIsAddContentOpen(true);
+                setState((prev) => ({
+                  ...prev,
+                  selectedSectionId: section.id,
+                  isAddContentOpen: true,
+                }));
               }}
             >
               <div className="space-y-4">
-                {activities
+                {state.activities
                   .filter((activity) => activity.section_id === section.id)
-                  // Możesz tu dodać sortowanie w JS, jeśli chcesz zachować kolejność
-                  // .sort((a, b) => a.sequence - b.sequence)
                   .map((activity) => (
                     <ActivityItem
                       key={activity.id}
@@ -346,14 +279,15 @@ const CoursePage = () => {
                           activity.visible
                         )
                       }
-                      onOpenSettings={() => handleOpenSettings(activity)} // <--- OTWIERA USTAWIENIA
+                      onOpenSettings={() => {
+                        setSelectedActivity(activity);
+                        setIsSettingsOpen(true);
+                      }}
                     />
                   ))}
 
-                {resources
+                {state.resources
                   .filter((resource) => resource.section_id === section.id)
-                  // Możesz tu dodać sortowanie w JS, jeśli chcesz zachować kolejność
-                  // .sort((a, b) => a.sequence - b.sequence)
                   .map((resource) => (
                     <ResourceItem
                       key={resource.id}
@@ -366,13 +300,16 @@ const CoursePage = () => {
                         )
                       }
                       onOpenSettings={() => {
-                        /* Możesz dodać analogiczny dialog dla zasobu */
+                        setSelectedResource(resource);
+                        setIsResourceSettingsOpen(true);
                       }}
                     />
                   ))}
 
-                {activities.filter((a) => a.section_id === section.id).length === 0 &&
-                  resources.filter((r) => r.section_id === section.id).length === 0 && (
+                {state.activities.filter((a) => a.section_id === section.id)
+                  .length === 0 &&
+                  state.resources.filter((r) => r.section_id === section.id)
+                    .length === 0 && (
                     <div className="text-center py-8 text-gray-500">
                       Ta sekcja jest pusta. Dodaj aktywność lub zasób.
                     </div>
@@ -381,7 +318,7 @@ const CoursePage = () => {
             </SectionCard>
           ))}
 
-          {sections.length === 0 && (
+          {state.sections.length === 0 && (
             <div className="text-center py-8 text-gray-500">
               Ten kurs nie ma jeszcze żadnych sekcji. Dodaj pierwszą sekcję.
             </div>
@@ -389,29 +326,32 @@ const CoursePage = () => {
         </div>
 
         <AddContentDialog
-          open={isAddContentOpen}
-          onOpenChange={setIsAddContentOpen}
+          open={state.isAddContentOpen}
+          onOpenChange={(open) =>
+            setState((prev) => ({ ...prev, isAddContentOpen: open }))
+          }
           onAddActivity={(data) => {
-            if (selectedSectionId) {
-              // @ts-ignore
-              handleAddActivity(selectedSectionId, data);
-              setIsAddContentOpen(false);
+            if (state.selectedSectionId) {
+              handleAddActivity(state.selectedSectionId, data);
             }
           }}
           onAddResource={(data) => {
-            if (selectedSectionId) {
-              // @ts-ignore
-              handleAddResource(selectedSectionId, data);
-              setIsAddContentOpen(false);
+            if (state.selectedSectionId) {
+              handleAddResource(state.selectedSectionId, data);
             }
           }}
         />
 
-        {/* Dialog z ustawieniami aktywności */}
         <ActivitySettingsDialog
           open={isSettingsOpen}
           onClose={() => setIsSettingsOpen(false)}
           activity={selectedActivity}
+        />
+
+        <ResourceSettingsDialog
+          open={isResourceSettingsOpen}
+          onClose={() => setIsResourceSettingsOpen(false)}
+          resource={selectedResource}
         />
       </div>
     </AuthLayout>

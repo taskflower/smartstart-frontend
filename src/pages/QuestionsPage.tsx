@@ -1,10 +1,9 @@
+// src/pages/QuestionsPage.tsx
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import { collection, getDocs, addDoc } from "firebase/firestore";
-import { db } from "../services/firebase";
-import { Question, QuestionType, Course, Section } from "../types/moodle";
-import AuthLayout from "../components/AuthLayout";
+import { Question, Course, Section, CreateQuestionData } from "@/types/moodle";
+import AuthLayout from "@/components/AuthLayout";
 import {
   Select,
   SelectContent,
@@ -14,81 +13,93 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useNavigate } from "react-router-dom";
+import { fetchQuestions, addQuestion } from "@/services/questionService";
+import { fetchAllCourses, fetchSections } from "@/services/courseService";
 
 export default function QuestionsPage() {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
   const [sections, setSections] = useState<Section[]>([]);
   const [isAdding, setIsAdding] = useState(false);
-  const [newQuestion, setNewQuestion] = useState({
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  const [newQuestion, setNewQuestion] = useState<CreateQuestionData>({
     course_id: "",
     section_id: "",
-    category_id: "",
-    type: "multiple_choice" as QuestionType,
+    type: "multiple_choice",
+    question_type: "multiple_choice",
     question_text: "",
     default_grade: 1,
   });
+  
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchData = async () => {
+    const loadData = async () => {
       try {
-        const [questionsSnapshot, coursesSnapshot, sectionsSnapshot] = await Promise.all([
-          getDocs(collection(db, "questions")),
-          getDocs(collection(db, "courses")),
-          getDocs(collection(db, "sections")),
+        setIsLoading(true);
+        const [questionsData, coursesData] = await Promise.all([
+          fetchQuestions(),
+          fetchAllCourses()
         ]);
 
-        const questionsData = questionsSnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        })) as Question[];
         setQuestions(questionsData);
-
-        const coursesData = coursesSnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        })) as Course[];
         setCourses(coursesData);
-
-        const sectionsData = sectionsSnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        })) as Section[];
-        setSections(sectionsData);
       } catch (error) {
-        console.error("Error fetching data:", error);
-        // You might want to add proper error handling here
+        console.error("Error loading data:", error);
+        setError("Wystąpił błąd podczas ładowania danych");
+      } finally {
+        setIsLoading(false);
       }
     };
 
-    fetchData();
+    loadData();
   }, []);
 
+  // Pobierz sekcje gdy zostanie wybrany kurs
+  useEffect(() => {
+    const loadSections = async () => {
+      if (!newQuestion.course_id) return;
+      
+      try {
+        const sectionsData = await fetchSections(newQuestion.course_id);
+        setSections(sectionsData);
+      } catch (error) {
+        console.error("Error loading sections:", error);
+        setError("Wystąpił błąd podczas ładowania sekcji");
+      }
+    };
+
+    loadSections();
+  }, [newQuestion.course_id]);
+
   const handleAddQuestion = async () => {
-    if (
-      !newQuestion.course_id ||
-      !newQuestion.section_id ||
-      !newQuestion.question_text
-    ) {
-      alert("Wypełnij wszystkie pola");
+    if (!newQuestion.course_id || !newQuestion.section_id || !newQuestion.question_text) {
+      setError("Wypełnij wszystkie pola");
       return;
     }
 
     try {
-      await addDoc(collection(db, "questions"), {
-        ...newQuestion,
-        created_at: new Date(),
-        updated_at: new Date(),
-      });
-
+      await addQuestion(newQuestion);
       setIsAdding(false);
-      window.location.reload();
+      // Odświeżamy listę pytań
+      const updatedQuestions = await fetchQuestions();
+      setQuestions(updatedQuestions);
+      setError(null);
     } catch (error) {
       console.error("Error adding question:", error);
-      alert("Wystąpił błąd podczas dodawania pytania");
+      setError("Wystąpił błąd podczas dodawania pytania");
     }
   };
+
+  if (isLoading) {
+    return (
+      <AuthLayout>
+        <div className="p-8">Ładowanie...</div>
+      </AuthLayout>
+    );
+  }
 
   return (
     <AuthLayout>
@@ -100,6 +111,12 @@ export default function QuestionsPage() {
             Dodaj pytanie
           </Button>
         </div>
+
+        {error && (
+          <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6">
+            {error}
+          </div>
+        )}
 
         {isAdding && (
           <div className="mb-6 p-4 border rounded">

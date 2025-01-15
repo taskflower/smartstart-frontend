@@ -2,8 +2,6 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus, Minus } from "lucide-react";
-import { collection, getDocs, addDoc, query, where } from "firebase/firestore";
-import { db } from "../services/firebase";
 import {
   Dialog,
   DialogContent,
@@ -12,30 +10,22 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import AuthLayout from "@/components/AuthLayout";
-
-interface Category {
-  id: string;
-  name: string;
-  parent_id: string | null;
-  items?: Category[];
-}
+import {
+  fetchTopLevelCategories,
+  fetchChildren,
+  addCategory,
+  Category,
+} from "@/services/categoryService";
 
 const CategoriesTree = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
 
-  // Fetch categories on mount
   useEffect(() => {
-    const fetchCategories = async () => {
+    (async () => {
       try {
-        const snapshot = await getDocs(
-          query(collection(db, "categories"), where("parent_id", "==", null))
-        );
-        const topLevel = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        })) as Category[];
+        const topLevel = await fetchTopLevelCategories();
 
         // Fetch children for each top-level category
         const withChildren = await Promise.all(
@@ -46,74 +36,49 @@ const CategoriesTree = () => {
         );
 
         setCategories(withChildren);
-        setIsLoading(false);
       } catch (error) {
-        console.error("Error fetching categories:", error);
+        console.error("Błąd pobierania kategorii:", error);
+      } finally {
         setIsLoading(false);
       }
-    };
-
-    fetchCategories();
+    })();
   }, []);
 
-  // Fetch children for a category
-  const fetchChildren = async (parentId: string) => {
-    const snapshot = await getDocs(
-      query(collection(db, "categories"), where("parent_id", "==", parentId))
-    );
-    return snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    })) as Category[];
-  };
-
-  // Toggle category expansion
-  const toggleExpand = (id: string) => {
+  const handleToggle = (id: string) => {
     setExpandedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+      const next = new Set(prev); // Properly initialized
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
       return next;
     });
   };
 
-  // Add new category and maintain expanded state
-  const addCategory = async (name: string, parentId: string | null = null) => {
+  const handleAddCategory = async (name: string, parentId?: string | null) => {
     try {
-      await addDoc(collection(db, "categories"), {
-        name,
-        parent_id: parentId,
-      });
-
-      // Fetch and update while preserving expanded state
-      const snapshot = await getDocs(
-        query(collection(db, "categories"), where("parent_id", "==", null))
-      );
-      const topLevel = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as Category[];
-
+      await addCategory(name, parentId);
+      // Refresh categories after adding
+      const topLevel = await fetchTopLevelCategories();
       const withChildren = await Promise.all(
         topLevel.map(async (cat) => ({
           ...cat,
           items: await fetchChildren(cat.id),
         }))
       );
-
       setCategories(withChildren);
     } catch (error) {
-      console.error("Error adding category:", error);
+      console.error("Błąd dodawania kategorii:", error);
     }
   };
 
-  // Render single category with children
   const renderCategory = (category: Category) => (
     <div key={category.id} className="pl-4">
       <div className="flex items-center justify-between p-2 border hover:bg-gray-50 rounded">
         <div
           className="flex items-center cursor-pointer"
-          onClick={() => toggleExpand(category.id)}
+          onClick={() => handleToggle(category.id)}
         >
           {(category.items?.length ?? 0) > 0 ? (
             expandedIds.has(category.id) ? (
@@ -144,7 +109,7 @@ const CategoriesTree = () => {
                 const name = (
                   form.elements.namedItem("name") as HTMLInputElement
                 ).value;
-                if (name) addCategory(name, category.id);
+                if (name) handleAddCategory(name, category.id);
               }}
               className="space-y-4"
             >
@@ -189,10 +154,8 @@ const CategoriesTree = () => {
                 onSubmit={(e) => {
                   e.preventDefault();
                   const form = e.target as HTMLFormElement;
-                  const name = (
-                    form.elements.namedItem("name") as HTMLInputElement
-                  ).value;
-                  if (name) addCategory(name);
+                  const name = (form.elements.namedItem("name") as HTMLInputElement).value;
+                  if (name) handleAddCategory(name);
                 }}
                 className="space-y-4"
               >
