@@ -217,9 +217,7 @@ const CoursePage = () => {
   if (!courseId) {
     return (
       <AuthLayout>
-       
-          <Alert variant="destructive">Brak ID kursu</Alert>
-      
+        <Alert variant="destructive">Brak ID kursu</Alert>
       </AuthLayout>
     );
   }
@@ -244,119 +242,117 @@ const CoursePage = () => {
 
   return (
     <AuthLayout>
-     
-        <CourseHeader
-          courseName={state.course.name}
-          courseDescription={state.course.description}
-          error={state.error}
-          onAddSection={handleAddSection}
-        />
+      <CourseHeader
+        courseName={state.course.name}
+        courseDescription={state.course.description}
+        error={state.error}
+        onAddSection={handleAddSection}
+      />
 
-        <div className="space-y-6">
-          {state.sections.map((section) => (
-            <SectionCard
-              key={section.id}
-              {...section}
-              onToggleVisibility={() =>
-                handleToggleVisibility("section", section.id, section.visible)
-              }
-              onAddContent={() => {
-                setState((prev) => ({
-                  ...prev,
-                  selectedSectionId: section.id,
-                  isAddContentOpen: true,
-                }));
-              }}
-            >
-              <div className="space-y-4">
-                {state.activities
-                  .filter((activity) => activity.section_id === section.id)
-                  .map((activity) => (
-                    <ActivityItem
-                      key={activity.id}
-                      {...activity}
-                      onToggleVisibility={() =>
-                        handleToggleVisibility(
-                          "activity",
-                          activity.id,
-                          activity.visible
-                        )
-                      }
-                      onOpenSettings={() => {
-                        setSelectedActivity(activity);
-                        setIsSettingsOpen(true);
-                      }}
-                    />
-                  ))}
+      <div className="space-y-6">
+        {state.sections.map((section) => (
+          <SectionCard
+            key={section.id}
+            {...section}
+            onToggleVisibility={() =>
+              handleToggleVisibility("section", section.id, section.visible)
+            }
+            onAddContent={() => {
+              setState((prev) => ({
+                ...prev,
+                selectedSectionId: section.id,
+                isAddContentOpen: true,
+              }));
+            }}
+          >
+            <div className="space-y-4">
+              {state.activities
+                .filter((activity) => activity.section_id === section.id)
+                .map((activity) => (
+                  <ActivityItem
+                    key={activity.id}
+                    {...activity}
+                    onToggleVisibility={() =>
+                      handleToggleVisibility(
+                        "activity",
+                        activity.id,
+                        activity.visible
+                      )
+                    }
+                    onOpenSettings={() => {
+                      setSelectedActivity(activity);
+                      setIsSettingsOpen(true);
+                    }}
+                  />
+                ))}
 
-                {state.resources
-                  .filter((resource) => resource.section_id === section.id)
-                  .map((resource) => (
-                    <ResourceItem
-                      key={resource.id}
-                      {...resource}
-                      onToggleVisibility={() =>
-                        handleToggleVisibility(
-                          "resource",
-                          resource.id,
-                          resource.visible
-                        )
-                      }
-                      onOpenSettings={() => {
-                        setSelectedResource(resource);
-                        setIsResourceSettingsOpen(true);
-                      }}
-                    />
-                  ))}
+              {state.resources
+                .filter((resource) => resource.section_id === section.id)
+                .map((resource) => (
+                  <ResourceItem
+                    key={resource.id}
+                    {...resource}
+                    onToggleVisibility={() =>
+                      handleToggleVisibility(
+                        "resource",
+                        resource.id,
+                        resource.visible
+                      )
+                    }
+                    onOpenSettings={() => {
+                      setSelectedResource(resource);
+                      setIsResourceSettingsOpen(true);
+                    }}
+                  />
+                ))}
 
-                {state.activities.filter((a) => a.section_id === section.id)
-                  .length === 0 &&
-                  state.resources.filter((r) => r.section_id === section.id)
-                    .length === 0 && (
-                    <div className="text-center py-8 text-gray-500">
-                      Ta sekcja jest pusta. Dodaj aktywność lub zasób.
-                    </div>
-                  )}
-              </div>
-            </SectionCard>
-          ))}
-
-          {state.sections.length === 0 && (
-            <div className="text-center py-8 text-gray-500">
-              Ten kurs nie ma jeszcze żadnych sekcji. Dodaj pierwszą sekcję.
+              {state.activities.filter((a) => a.section_id === section.id)
+                .length === 0 &&
+                state.resources.filter((r) => r.section_id === section.id)
+                  .length === 0 && (
+                  <div className="text-center py-8 text-gray-500">
+                    Ta sekcja jest pusta. Dodaj aktywność lub zasób.
+                  </div>
+                )}
             </div>
-          )}
-        </div>
+          </SectionCard>
+        ))}
 
-        <AddContentDialog
-          open={state.isAddContentOpen}
-          onOpenChange={(open) =>
-            setState((prev) => ({ ...prev, isAddContentOpen: open }))
+        {state.sections.length === 0 && (
+          <div className="text-center py-8 text-gray-500">
+            Ten kurs nie ma jeszcze żadnych sekcji. Dodaj pierwszą sekcję.
+          </div>
+        )}
+      </div>
+
+      <AddContentDialog
+        open={state.isAddContentOpen}
+        onOpenChange={(open) =>
+          setState((prev) => ({ ...prev, isAddContentOpen: open }))
+        }
+        onAddActivity={(data) => {
+          if (state.selectedSectionId) {
+            handleAddActivity(state.selectedSectionId, data);
           }
-          onAddActivity={(data) => {
-            if (state.selectedSectionId) {
-              handleAddActivity(state.selectedSectionId, data);
-            }
-          }}
-          onAddResource={(data) => {
-            if (state.selectedSectionId) {
-              handleAddResource(state.selectedSectionId, data);
-            }
-          }}
-        />
+        }}
+        onAddResource={(data) => {
+          if (state.selectedSectionId) {
+            handleAddResource(state.selectedSectionId, data);
+          }
+        }}
+      />
 
-        <ActivitySettingsDialog
-          open={isSettingsOpen}
-          onClose={() => setIsSettingsOpen(false)}
-          activity={selectedActivity}
-        />
+      <ActivitySettingsDialog
+        open={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        activity={selectedActivity}
+      />
 
-        <ResourceSettingsDialog
-          open={isResourceSettingsOpen}
-          onClose={() => setIsResourceSettingsOpen(false)}
-          resource={selectedResource}
-        />
-     
+      <ResourceSettingsDialog
+        open={isResourceSettingsOpen}
+        onClose={() => setIsResourceSettingsOpen(false)}
+        resource={selectedResource}
+      />
     </AuthLayout>
   );
 };

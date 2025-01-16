@@ -153,7 +153,7 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
               if (item.type === "separator") {
                 return <Separator key={`sep-${index}`} className="my-2" />;
               }
-              const isActive = location.pathname === item.href;
+              const isActive = location.pathname.startsWith(item.href);
               const Icon = item.icon;
               return (
                 <Button
@@ -178,7 +178,7 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
                 if (item.type === "separator") {
                   return null;
                 }
-                const isActive = location.pathname === item.href;
+                const isActive = location.pathname.startsWith(item.href);
                 const Icon = item.icon;
                 return (
                   <Button
@@ -198,13 +198,12 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
         {/* Main Content */}
         <main
           className={cn(
-            "flex-1 px-4 md:px-6", // Dodaj poziomy padding w mobile i większy w md
-            "md:ml-64", // Przesunięcie dla sidebara
-            isMobile ? "mb-16" : "" // Odstęp na dole, by nie zasłaniała go dolna nawigacja
+            "flex-1 px-0 md:px-6",
+            "md:ml-64",
+            isMobile ? "mb-16" : ""
           )}
         >
-          <div className="p-8 space-y-6 container mx-auto">{children}</div>
-          
+          <div className="p-4 sm:p-8 space-y-6 container mx-auto">{children}</div>
         </main>
       </div>
     </div>

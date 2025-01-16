@@ -14,7 +14,7 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
-import { BookOpen, Brain, Rocket, Sparkles, CheckCircle2 } from "lucide-react";
+import { BookOpen, Brain, Rocket, Sparkles, CheckCircle2, MoveRight } from "lucide-react";
 import AuthLayout from "@/components/AuthLayout";
 import PageHeader from "@/components/PageHeader";
 
@@ -227,7 +227,7 @@ const CourseGenerator = () => {
   return (
     <AuthLayout>
       <PageHeader to="courses" title="Kursy" btn="Dodaj kurs" />
-      <Card>
+      <Card className="max-w-3xl mx-auto">
         <CardHeader>
           <CardTitle className="text-2xl flex items-center gap-2">
             <Sparkles className="h-6 w-6" />
@@ -457,6 +457,7 @@ const CourseGenerator = () => {
                 )}
                 <Button
                   className="flex-1"
+                  size={"lg"}
                   onClick={() => {
                     if (currentStep === 3) {
                       handleGenerate();
@@ -471,6 +472,7 @@ const CourseGenerator = () => {
                   }
                 >
                   {currentStep === 3 ? "Generuj" : "Dalej"}
+                  <MoveRight className="ml-2 h-4 w-4" />
                 </Button>
               </div>
             )}
