@@ -1,4 +1,4 @@
-import { collection, getDocs, addDoc, query } from "firebase/firestore";
+import { collection, getDocs, addDoc, query, where, doc, deleteDoc } from "firebase/firestore";
 import { db } from "./firebase";
 
 export interface Category {
@@ -8,7 +8,6 @@ export interface Category {
   items?: Category[];
 }
 
-// Pobiera wszystkie kategorie jednym zapytaniem
 export async function fetchAllCategories(): Promise<Category[]> {
   const snapshot = await getDocs(query(collection(db, "categories")));
   const allCategories = snapshot.docs.map((doc) => ({
@@ -16,10 +15,8 @@ export async function fetchAllCategories(): Promise<Category[]> {
     ...doc.data(),
   })) as Category[];
 
-  // Buduje drzewo kategorii
   const categoryMap = new Map<string | null, Category[]>();
   
-  // Grupuje kategorie według parent_id
   allCategories.forEach(category => {
     const parentId = category.parent_id;
     if (!categoryMap.has(parentId)) {
@@ -28,7 +25,6 @@ export async function fetchAllCategories(): Promise<Category[]> {
     categoryMap.get(parentId)!.push(category);
   });
 
-  // Funkcja rekurencyjna do budowania drzewa
   function buildTree(parentId: string | null): Category[] {
     const children = categoryMap.get(parentId) || [];
     return children.map(child => ({
@@ -37,14 +33,24 @@ export async function fetchAllCategories(): Promise<Category[]> {
     }));
   }
 
-  // Zwraca tylko kategorie najwyższego poziomu z ich dziećmi
   return buildTree(null);
 }
 
-// Dodaje nową kategorię do kolekcji
 export async function addCategory(name: string, parentId?: string | null): Promise<void> {
   await addDoc(collection(db, "categories"), {
     name,
     parent_id: parentId ?? null,
   });
+}
+
+export async function deleteCategory(categoryId: string): Promise<void> {
+  const categoriesRef = collection(db, "categories");
+  const childrenQuery = query(categoriesRef, where("parent_id", "==", categoryId));
+  const childrenSnapshot = await getDocs(childrenQuery);
+  
+  if (!childrenSnapshot.empty) {
+    throw new Error("Cannot delete category with subcategories");
+  }
+  
+  await deleteDoc(doc(db, "categories", categoryId));
 }
