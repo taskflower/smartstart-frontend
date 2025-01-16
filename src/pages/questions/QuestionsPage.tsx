@@ -1,7 +1,7 @@
 // src/pages/QuestionsPage.tsx
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { Question, Course, Section, CreateQuestionData } from "@/types/moodle";
 import AuthLayout from "@/components/AuthLayout";
 import {
@@ -13,7 +13,11 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useNavigate } from "react-router-dom";
-import { fetchQuestions, addQuestion } from "@/services/questionService";
+import { 
+  fetchQuestions, 
+  addQuestion, 
+  deleteQuestionWithAnswers 
+} from "@/services/questionService";
 import { fetchAllCourses, fetchSections } from "@/services/courseService";
 
 export default function QuestionsPage() {
@@ -57,7 +61,6 @@ export default function QuestionsPage() {
     loadData();
   }, []);
 
-  // Pobierz sekcje gdy zostanie wybrany kurs
   useEffect(() => {
     const loadSections = async () => {
       if (!newQuestion.course_id) return;
@@ -93,6 +96,19 @@ export default function QuestionsPage() {
     }
   };
 
+  const handleDeleteQuestion = async (questionId: string) => {
+    try {
+      await deleteQuestionWithAnswers(questionId);
+      // Odświeżamy listę pytań po usunięciu
+      const updatedQuestions = await fetchQuestions();
+      setQuestions(updatedQuestions);
+      setError(null);
+    } catch (error) {
+      console.error("Error deleting question:", error);
+      setError("Wystąpił błąd podczas usuwania pytania");
+    }
+  };
+
   if (isLoading) {
     return (
       <AuthLayout>
@@ -103,7 +119,7 @@ export default function QuestionsPage() {
 
   return (
     <AuthLayout>
-      <div className="p-8">
+     
         <div className="flex justify-between mb-6">
           <h1 className="text-2xl font-bold">Bank pytań</h1>
           <Button onClick={() => setIsAdding(true)}>
@@ -182,16 +198,25 @@ export default function QuestionsPage() {
               className="p-4 border rounded flex justify-between items-center"
             >
               <div>{question.question_text}</div>
-              <Button
-                variant="outline"
-                onClick={() => navigate(`/questions/${question.id}/answers`)}
-              >
-                Zarządzaj odpowiedziami
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => navigate(`/questions/${question.id}/answers`)}
+                >
+                  Zarządzaj odpowiedziami
+                </Button>
+                <Button
+                  variant="destructive"
+                  size="icon"
+                  onClick={() => handleDeleteQuestion(question.id)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           ))}
         </div>
-      </div>
+     
     </AuthLayout>
   );
 }

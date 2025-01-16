@@ -19,6 +19,8 @@ import {
   doc,
   deleteDoc,
 } from "firebase/firestore";
+import PageHeader from "@/components/PageHeader";
+import PageLoader from "@/components/PageLoader";
 
 interface Course {
   id: string;
@@ -78,88 +80,76 @@ const Dashboard = () => {
   if (loading) {
     return (
       <AuthLayout>
-        <div className="p-8">Ładowanie kursów...</div>
+        <PageHeader to="courses" title="Twoje kursy" btn="Dodaj kurs" />
+        <PageLoader title="Ładowanie kursów..." />
       </AuthLayout>
     );
   }
 
   return (
     <AuthLayout>
-      <div className="p-8">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">Twoje kursy</h1>
-          <Button onClick={() => navigate("/courses/create")}>
+      <PageHeader to="courses" title="Twoje kursy" btn="Dodaj kurs" />
+      {error && (
+        <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6">
+          {error}
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {courses.map((course) => (
+          <Card
+            key={course.id}
+            className="cursor-pointer hover:shadow-lg transition-shadow"
+          >
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-xl font-bold">{course.name}</CardTitle>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm">
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    onClick={() => navigate(`/courses/${course.id}`)}
+                  >
+                    Otwórz
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => handleDeleteCourse(course.id)}
+                  >
+                    Usuń
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-gray-500 line-clamp-2">
+                {course.description}
+              </p>
+              <div className="flex items-center mt-4 text-sm text-gray-500">
+                <GraduationCap className="mr-2 h-4 w-4" />
+                <span>
+                  Utworzono: {course.created_at?.toLocaleDateString()}
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {courses.length === 0 && (
+        <div className="text-center py-12">
+          <GraduationCap className="mx-auto h-12 w-12 text-gray-400" />
+          <h3 className="mt-4 text-lg font-medium">Brak kursów</h3>
+          <p className="mt-2 text-gray-500">
+            Rozpocznij od dodania swojego pierwszego kursu.
+          </p>
+          <Button onClick={() => navigate("/courses/create")} className="mt-4">
             <Plus className="mr-2 h-4 w-4" /> Dodaj kurs
           </Button>
         </div>
-
-        {error && (
-          <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6">
-            {error}
-          </div>
-        )}
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {courses.map((course) => (
-            <Card
-              key={course.id}
-              className="cursor-pointer hover:shadow-lg transition-shadow"
-            >
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-xl font-bold">
-                  {course.name}
-                </CardTitle>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm">
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem
-                      onClick={() => navigate(`/courses/${course.id}`)}
-                    >
-                      Otwórz
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => handleDeleteCourse(course.id)}
-                    >
-                      Usuń
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-gray-500 line-clamp-2">
-                  {course.description}
-                </p>
-                <div className="flex items-center mt-4 text-sm text-gray-500">
-                  <GraduationCap className="mr-2 h-4 w-4" />
-                  <span>
-                    Utworzono: {course.created_at?.toLocaleDateString()}
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        {courses.length === 0 && (
-          <div className="text-center py-12">
-            <GraduationCap className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-4 text-lg font-medium">Brak kursów</h3>
-            <p className="mt-2 text-gray-500">
-              Rozpocznij od dodania swojego pierwszego kursu.
-            </p>
-            <Button
-              onClick={() => navigate("/courses/create")}
-              className="mt-4"
-            >
-              <Plus className="mr-2 h-4 w-4" /> Dodaj kurs
-            </Button>
-          </div>
-        )}
-      </div>
+      )}
     </AuthLayout>
   );
 };

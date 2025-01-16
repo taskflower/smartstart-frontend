@@ -93,7 +93,7 @@ export default function AnswersPage() {
 
   return (
     <AuthLayout>
-      <div className="p-8">
+     
         <div className="mb-6">
           <h1 className="text-2xl font-bold">Odpowiedzi</h1>
           <p className="text-gray-600 mt-2">{question.question_text}</p>
@@ -138,7 +138,7 @@ export default function AnswersPage() {
             </div>
           ))}
         </div>
-      </div>
+     
     </AuthLayout>
   );
 }

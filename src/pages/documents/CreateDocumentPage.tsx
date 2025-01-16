@@ -11,11 +11,12 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { SchoolType } from "../types/document";
-import { db } from "../services/firebase";
+
 import { collection, addDoc } from "firebase/firestore";
 import { GraduationCap, ArrowLeft } from "lucide-react";
 import { Navigate } from "react-router-dom";
+import { db } from "@/services/firebase";
+import { SchoolType } from "@/types/document";
 
 export default function CreateDocumentPage() {
   const [loading, setLoading] = useState(false);

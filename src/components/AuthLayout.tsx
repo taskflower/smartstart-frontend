@@ -203,7 +203,8 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
             isMobile ? "mb-16" : "" // Odstęp na dole, by nie zasłaniała go dolna nawigacja
           )}
         >
-          {children}
+          <div className="p-8 space-y-6 container mx-auto">{children}</div>
+          
         </main>
       </div>
     </div>

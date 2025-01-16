@@ -10,7 +10,7 @@ import ReactFlow, {
   Node,
   useEdgesState,
   useNodesState,
-  BackgroundVariant
+  BackgroundVariant,
 } from "reactflow";
 import "reactflow/dist/style.css";
 
@@ -88,7 +88,9 @@ function CentralNode() {
   return (
     <Card className="w-48 text-center">
       <CardHeader>
-        <CardTitle className="text-sm font-bold">Trasa Twojej Podróży</CardTitle>
+        <CardTitle className="text-sm font-bold">
+          Trasa Twojej Podróży
+        </CardTitle>
         <CardDescription>Interdyscyplinarny rdzeń</CardDescription>
       </CardHeader>
       <CardContent>
@@ -136,7 +138,6 @@ const nodeTypes = {
 };
 
 // -------------------- POZYCJE (x,y) i KONFIGURACJA --------------------
-
 
 /**
  * Mamy 6 węzłów: centralny + 5 obszarów.
@@ -234,7 +235,7 @@ export default function InterdisciplinaryPage() {
 
   return (
     <AuthLayout>
-      <div className="container mx-auto py-8 h-[calc(100vh-4rem)] flex flex-col">
+      <div className="mx-auto  h-[calc(100vh-4rem)] flex flex-col">
         <h1 className="text-3xl font-bold mb-4">Mapa interdyscyplinarna</h1>
         <p className="text-sm text-muted-foreground mb-8 max-w-2xl">
           Poniższa wizualizacja pokazuje, jak różne obszary wiedzy mogą się

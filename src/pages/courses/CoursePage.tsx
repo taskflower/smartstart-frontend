@@ -11,12 +11,6 @@ import type {
 } from "@/types/moodle";
 import AuthLayout from "@/components/AuthLayout";
 import { Alert } from "@/components/ui/alert";
-import CourseHeader from "@/components/course/CourseHeader";
-import { SectionCard } from "@/components/course/SectionComponents";
-import { ActivityItem, ResourceItem } from "@/components/course/ContentItems";
-import { AddContentDialog } from "@/components/course/AddContentDialog";
-import ActivitySettingsDialog from "@/components/course/ActivitySettingsDialog";
-import ResourceSettingsDialog from "@/components/course/ResourceSettingsDialog";
 import {
   fetchCourse,
   fetchSections,
@@ -27,6 +21,15 @@ import {
   addResource,
   toggleVisibility,
 } from "@/services/courseService";
+import {
+  CourseHeader,
+  SectionCard,
+  ActivityItem,
+  ResourceItem,
+  AddContentDialog,
+  ActivitySettingsDialog,
+  ResourceSettingsDialog,
+} from "@/components/course";
 
 const CoursePage = () => {
   const { courseId } = useParams<{ courseId: string }>();
@@ -214,9 +217,9 @@ const CoursePage = () => {
   if (!courseId) {
     return (
       <AuthLayout>
-        <div className="p-8">
+       
           <Alert variant="destructive">Brak ID kursu</Alert>
-        </div>
+      
       </AuthLayout>
     );
   }
@@ -241,7 +244,7 @@ const CoursePage = () => {
 
   return (
     <AuthLayout>
-      <div className="p-8">
+     
         <CourseHeader
           courseName={state.course.name}
           courseDescription={state.course.description}
@@ -353,7 +356,7 @@ const CoursePage = () => {
           onClose={() => setIsResourceSettingsOpen(false)}
           resource={selectedResource}
         />
-      </div>
+     
     </AuthLayout>
   );
 };

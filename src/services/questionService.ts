@@ -8,6 +8,7 @@ import {
   doc,
   updateDoc,
   getDoc,
+  runTransaction,
 } from "firebase/firestore";
 import { db } from "./firebase";
 import { Question, Answer } from "@/types/moodle";
@@ -94,4 +95,30 @@ export const updateAnswer = async (
 ): Promise<void> => {
   const answerRef = doc(db, "answers", answerId);
   await updateDoc(answerRef, answerData);
+};
+
+// Usuń pytanie wraz z jego odpowiedziami w transakcji
+export const deleteQuestionWithAnswers = async (questionId: string): Promise<void> => {
+  try {
+    await runTransaction(db, async (transaction) => {
+      // Pobierz wszystkie odpowiedzi dla pytania
+      const answersQuery = query(
+        collection(db, "answers"),
+        where("question_id", "==", questionId)
+      );
+      const answersSnapshot = await getDocs(answersQuery);
+      
+      // Usuń wszystkie odpowiedzi
+      answersSnapshot.docs.forEach((answerDoc) => {
+        transaction.delete(doc(db, "answers", answerDoc.id));
+      });
+      
+      // Usuń pytanie
+      const questionRef = doc(db, "questions", questionId);
+      transaction.delete(questionRef);
+    });
+  } catch (error) {
+    console.error("Error deleting question with answers:", error);
+    throw error;
+  }
 };
