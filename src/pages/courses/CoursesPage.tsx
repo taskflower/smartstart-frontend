@@ -1,12 +1,24 @@
-import { useState, useEffect } from "react";
+// src/pages/courses/CoursesPage.tsx
+import  { useState, useEffect } from "react";
 import { collection, getDocs } from "firebase/firestore";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+
 import AuthLayout from "@/components/AuthLayout";
 import { db } from "@/services/firebase";
 import PageHeader from "@/components/PageHeader";
 import PageLoader from "@/components/PageLoader";
+
+import { Category, fetchAllCategories } from "@/services/categoryService";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import CategoryFilter from "@/components/course/CategoryFilter";
+import PaginatedCoursesList from "@/components/course/PaginatedCoursesList";
+
 
 interface Course {
   id: string;
@@ -14,50 +26,106 @@ interface Course {
   description: string;
   category_id: string;
   categoryName?: string;
-
   participants?: number;
   rating?: number;
 }
 
 const CoursesPage = () => {
-  const [courses, setCourses] = useState<Course[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
 
+  // Przechowywanie liczby kursów w każdej kategorii
+  const [coursesInCategory, setCoursesInCategory] = useState<Record<string, number>>({});
+
+  // Funkcja do pobierania nazwy kategorii
+  const getCategoryName = (categories: Category[], categoryId: string): string => {
+    const findCategory = (categories: Category[], targetId: string): string | null => {
+      for (const category of categories) {
+        if (category.id === targetId) return category.name;
+        if (category.items) {
+          const found = findCategory(category.items, targetId);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+
+    return findCategory(categories, categoryId) || "Brak kategorii";
+  };
+
+  // Funkcja do obliczania liczby kursów w każdej kategorii
+  const countCourses = (categories: Category[], coursesData: Course[]) => {
+    const counts: Record<string, number> = {};
+
+    const countRecursive = (category: Category) => {
+      let count = coursesData.filter(course => course.category_id === category.id).length;
+      if (category.items) {
+        category.items.forEach(subcat => {
+          count += countRecursive(subcat);
+        });
+      }
+      counts[category.id] = count;
+      return count;
+    };
+
+    categories.forEach(cat => countRecursive(cat));
+    return counts;
+  };
+
+  // Parsowanie query string i ustawianie wybranej kategorii
   useEffect(() => {
-    const fetchCourses = async () => {
+    const params = new URLSearchParams(location.search);
+    const categoryId = params.get("category");
+    setSelectedCategory(categoryId ? categoryId : null);
+  }, [location.search]);
+
+  // Aktualizacja query string, gdy wybrana kategoria się zmienia
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (selectedCategory) {
+      params.set("category", selectedCategory);
+    } else {
+      params.delete("category");
+    }
+    navigate({ pathname: location.pathname, search: params.toString() }, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCategory]);
+
+  // Pobieranie danych kategorii i kursów
+  useEffect(() => {
+    const fetchData = async () => {
       try {
-        // Pobierz kursy
-        const coursesSnapshot = await getDocs(collection(db, "courses"));
-        const coursesData = coursesSnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        })) as Course[];
+        setIsLoading(true);
+        const [treeCategories, coursesSnapshot] = await Promise.all([
+          fetchAllCategories(),
+          getDocs(collection(db, "courses")),
+        ]);
 
-        // Pobierz kategorie
-        const categoriesSnapshot = await getDocs(collection(db, "categories"));
-        const categories = new Map(
-          categoriesSnapshot.docs.map((doc) => [
-            doc.id,
-            doc.data().name as string,
-          ])
-        );
+        const coursesData = coursesSnapshot.docs.map((doc) => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+            categoryName: data.category_id ? getCategoryName(treeCategories, data.category_id) : "Brak kategorii",
+          };
+        }) as Course[];
 
-        // Połącz dane kursów z nazwami kategorii
-        const coursesWithCategories = coursesData.map((course) => ({
-          ...course,
-          categoryName: categories.get(course.category_id) || "Brak kategorii",
-        }));
+        const courseCounts = countCourses(treeCategories, coursesData);
 
-        setCourses(coursesWithCategories);
+        setCategories(treeCategories);
+        setCoursesInCategory(courseCounts);
       } catch (error) {
-        console.error("Error fetching courses:", error);
+        console.error("Error fetching data:", error);
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchCourses();
+    fetchData();
   }, []);
 
   if (isLoading) {
@@ -72,69 +140,60 @@ const CoursesPage = () => {
   return (
     <AuthLayout>
       <PageHeader to="courses" title="Kursy" btn="Dodaj kurs" />
-      <div className="space-y-6">
-        <div className="hidden md:block">
-          <div className="grid grid-cols-5 text-sm text-gray-500 border-b pb-2 mb-4">
-            <span className="col-span-2">Nazwa kursu</span>
-            <span>Kategoria</span>
-            <span>Uczestnicy</span>
-            <span>Ocena</span>
-          </div>
-          {courses.map((course) => (
-            <div
-              key={course.id}
-              className="grid grid-cols-5 items-center py-4 border-b hover:bg-gray-50 cursor-pointer"
-              onClick={() => navigate(`/courses/${course.id}`)}
+
+      {/* Główny kontener */}
+      <div className="flex flex-col md:flex-row gap-6">
+        {/* Tabela kursów */}
+        <div className="min-w-0 flex-1">
+          {/* Przycisk mobilnego filtra */}
+          <div className="md:hidden mb-4">
+            <Button
+              variant="outline"
+              onClick={() => setIsMobileFilterOpen(true)}
+              className="w-full"
             >
-              <div className="col-span-2">
-                <h2 className="text-base font-medium ">{course.name}</h2>
-                <p className="text-sm text-gray-500">{course.description}</p>
-              </div>
-              <p>{course.categoryName}</p>
-              <p>{course.participants || 0} uczestników</p>
-              <div className="flex items-center gap-1">
-                <span className="text-yellow-500">★</span>
-                <span>{course.rating || "Brak ocen"}</span>
-              </div>
-            </div>
-          ))}
+              Filtruj według kategorii
+            </Button>
+          </div>
+
+          {/* Komponent PaginatedCoursesList */}
+          <PaginatedCoursesList
+            categories={categories}
+            selectedCategory={selectedCategory}
+            coursesInCategory={coursesInCategory}
+          />
         </div>
 
-        {/* Widok mobilny (karty) */}
-        <div className="block md:hidden">
-          <div className="flex flex-col gap-5">
-            {courses.map((course) => (
-              <div
-                key={course.id}
-                className="border rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
-                onClick={() => navigate(`/courses/${course.id}`)}
-              >
-                <h2 className="text-lg font-semibold ">{course.name}</h2>
-                <p className="text-sm text-gray-500">{course.categoryName}</p>
-                <p className="text-gray-700 text-sm line-clamp-3 mb-4">
-                  {course.description}
-                </p>
-                <div className="flex items-center justify-between text-gray-600 text-sm">
-                  <span>{course.participants || 0} uczestników</span>
-                  <div className="flex items-center gap-1">
-                    <span className="text-yellow-500">★</span>
-                    <span>{course.rating || "Brak ocen"}</span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+        {/* Filtr kategorii na desktopie */}
+        <div className="hidden md:block w-80">
+          <CategoryFilter
+            categories={categories}
+            selectedCategory={selectedCategory}
+            onSelectCategory={setSelectedCategory}
+            coursesInCategory={coursesInCategory}
+          />
         </div>
       </div>
 
-      {courses.length === 0 && (
-        <div className="text-center py-12">
-          <p className="text-gray-500 mb-4">Nie znaleziono żadnych kursów</p>
-          <Button onClick={() => navigate("/courses/create")}>
-            <Plus className="mr-2 h-4 w-4" /> Dodaj pierwszy kurs
-          </Button>
-        </div>
-      )}
+      {/* Mobilny filtr kategorii */}
+      <Sheet open={isMobileFilterOpen} onOpenChange={setIsMobileFilterOpen}>
+        <SheetContent side="right">
+          <SheetHeader>
+            <SheetTitle>Filtruj według kategorii</SheetTitle>
+          </SheetHeader>
+          <div className="mt-4">
+            <CategoryFilter
+              categories={categories}
+              selectedCategory={selectedCategory}
+              onSelectCategory={(categoryId) => { 
+                setSelectedCategory(categoryId);
+                setIsMobileFilterOpen(false);
+              }}
+              coursesInCategory={coursesInCategory}
+            />
+          </div>
+        </SheetContent>
+      </Sheet>
     </AuthLayout>
   );
 };
