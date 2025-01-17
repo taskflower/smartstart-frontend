@@ -24,12 +24,11 @@ import {
 import {
   CourseHeader,
   SectionCard,
-  ActivityItem,
-  ResourceItem,
   AddContentDialog,
   ActivitySettingsDialog,
   ResourceSettingsDialog,
 } from "@/components/course";
+import ContentItem from "@/components/course/ContentItem";
 
 const CoursePage = () => {
   const { courseId } = useParams<{ courseId: string }>();
@@ -269,7 +268,7 @@ const CoursePage = () => {
               {state.activities
                 .filter((activity) => activity.section_id === section.id)
                 .map((activity) => (
-                  <ActivityItem
+                  <ContentItem
                     key={activity.id}
                     {...activity}
                     onToggleVisibility={() =>
@@ -289,7 +288,7 @@ const CoursePage = () => {
               {state.resources
                 .filter((resource) => resource.section_id === section.id)
                 .map((resource) => (
-                  <ResourceItem
+                  <ContentItem
                     key={resource.id}
                     {...resource}
                     onToggleVisibility={() =>

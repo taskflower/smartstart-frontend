@@ -4,7 +4,7 @@ import { ChevronRight, ChevronDown } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Category } from '@/services/categoryService';
 import { cn } from '@/services/utils';
 
@@ -120,7 +120,7 @@ const CategoryFilter: React.FC<CategoryFilterProps> = ({
   };
 
   return (
-    <Card>
+    <div>
       <CardHeader className="pb-3">
         <CardTitle className="text-lg font-medium">Kategorie</CardTitle>
       </CardHeader>
@@ -145,7 +145,7 @@ const CategoryFilter: React.FC<CategoryFilterProps> = ({
           </ScrollArea>
         </div>
       </CardContent>
-    </Card>
+    </div>
   );
 };
 
