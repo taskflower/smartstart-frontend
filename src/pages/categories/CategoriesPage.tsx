@@ -6,11 +6,13 @@ import {
   addCategory,
   deleteCategory,
   Category,
+  updateCategory,
 } from "@/services/categoryService";
 import PageLoader from "@/components/PageLoader";
 import PageHeader from "@/components/PageHeader";
 import { CategoryItem } from "@/components/categories/CategoryItem";
 import { AddCategoryDialog } from "@/components/categories/AddCategoryDialog";
+import { Button } from "@/components/ui/button";
 
 const CategoriesTree: React.FC = () => {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -47,13 +49,26 @@ const CategoriesTree: React.FC = () => {
     });
   };
 
-  const handleAddCategory = async (name: string, parentId?: string | null) => {
-    await addCategory(name, parentId);
+  const handleAddCategory = async (
+    name: string,
+    icon: string | null,
+    parentId?: string | null
+  ) => {
+    await addCategory(name, icon, parentId);
     await loadCategories();
   };
 
   const handleDeleteCategory = async (category: Category) => {
     await deleteCategory(category.id);
+    await loadCategories();
+  };
+
+  const handleEditCategory = async (
+    categoryId: string,
+    newName: string,
+    newIcon: string | null
+  ) => {
+    await updateCategory(categoryId, newName, newIcon);
     await loadCategories();
   };
 
@@ -70,7 +85,11 @@ const CategoriesTree: React.FC = () => {
     <AuthLayout>
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Kategorie</h1>
-        <AddCategoryDialog onAdd={handleAddCategory} />
+        <AddCategoryDialog
+          onAdd={handleAddCategory}
+          parentCategory={undefined}
+          trigger={<Button>Dodaj kategorię</Button>}
+        />
       </div>
 
       {error ? (
@@ -87,6 +106,7 @@ const CategoriesTree: React.FC = () => {
               onToggle={() => handleToggle(category.id)}
               onAdd={handleAddCategory}
               onDelete={handleDeleteCategory}
+              onEdit={handleEditCategory}
               expandedIds={expandedIds}
               handleToggle={handleToggle}
             />

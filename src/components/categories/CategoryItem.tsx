@@ -1,17 +1,22 @@
+// CategoryItem.tsx
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, Minus, Loader2, Trash2 } from "lucide-react";
+import { Plus, Minus, Loader2, Trash2, Pencil } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Category } from "@/services/categoryService";
 import { cn } from "@/services/utils";
 import { AddCategoryDialog } from "./AddCategoryDialog";
+import { EditCategoryDialog } from "./EditCategoryDialog";
+import { EDUCATION_ICONS } from "../IconSelector";
+
 
 interface CategoryItemProps {
   category: Category;
   expanded: boolean;
   onToggle: () => void;
-  onAdd: (name: string, parentId?: string | null) => Promise<void>;
+  onAdd: (name: string, icon: string | null, parentId?: string | null) => Promise<void>;
   onDelete: (category: Category) => Promise<void>;
+  onEdit: (categoryId: string, newName: string, newIcon: string | null) => Promise<void>; // zaktualizowana sygnatura
   expandedIds: Set<string>;
   handleToggle: (id: string) => void;
 }
@@ -22,12 +27,15 @@ export const CategoryItem: React.FC<CategoryItemProps> = ({
   onToggle,
   onAdd,
   onDelete,
+  onEdit,
   expandedIds,
   handleToggle,
 }) => {
   const hasChildren = (category.items?.length ?? 0) > 0;
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  const CategoryIcon = category.icon ? EDUCATION_ICONS[category.icon] : null;
 
   const handleDelete = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -47,13 +55,11 @@ export const CategoryItem: React.FC<CategoryItemProps> = ({
   };
 
   return (
-    <div className="pl-4">
+    <div className="pl-4 select-none">
       <div className="flex items-center justify-between p-2 border hover:bg-gray-50 rounded">
-        <div
-          className="flex items-center cursor-pointer group"
-          onClick={onToggle}
-        >
-          <div className="w-4">
+        {/* Obszar Toggle */}
+        <div className="flex items-center cursor-pointer group" onClick={onToggle}>
+          <div className="w-6 h-6 flex items-center justify-center rounded-full border hover:bg-gray-200 transition">
             {hasChildren &&
               (expanded ? (
                 <Minus className="h-4 w-4 text-gray-500" />
@@ -61,20 +67,62 @@ export const CategoryItem: React.FC<CategoryItemProps> = ({
                 <Plus className="h-4 w-4 text-gray-500" />
               ))}
           </div>
-          <span className="ml-2 group-hover:text-gray-700">
-            {category.name}
-          </span>
+          <div className="flex items-center ml-2">
+            {CategoryIcon && <CategoryIcon className="w-5 h-5 mr-2 text-gray-600" />}
+            <span className="group-hover:text-gray-700">{category.name}</span>
+          </div>
         </div>
+        
+        {/* Akcje */}
         <div className="flex items-center gap-2">
-          <AddCategoryDialog parentCategory={category} onAdd={onAdd} />
+          {/* Przycisk Edytuj */}
+          <EditCategoryDialog
+            category={category}
+            onEdit={onEdit}
+            trigger={
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={(e) => e.stopPropagation()}
+                aria-label={`Edytuj kategorię ${category.name}`}
+              >
+                <Pencil className="h-4 w-4" />
+              </Button>
+            }
+          />
+
+          {/* Przycisk Dodaj */}
+          <AddCategoryDialog
+            parentCategory={category}
+            onAdd={onAdd}
+            trigger={
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={(e) => e.stopPropagation()}
+                aria-label={`Dodaj podkategorię do ${category.name}`}
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            }
+          />
+
+          {/* Przycisk Usuń */}
           <Button
+            variant="ghost"
             size="icon"
-            onClick={handleDelete}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDelete(e);
+            }}
             disabled={isDeleting || hasChildren}
             className={cn(
               "h-8 w-8",
               hasChildren && "cursor-not-allowed opacity-50"
             )}
+            aria-label={`Usuń kategorię ${category.name}`}
           >
             {isDeleting ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -99,6 +147,7 @@ export const CategoryItem: React.FC<CategoryItemProps> = ({
               onToggle={() => handleToggle(child.id)}
               onAdd={onAdd}
               onDelete={onDelete}
+              onEdit={onEdit}
               expandedIds={expandedIds}
               handleToggle={handleToggle}
             />

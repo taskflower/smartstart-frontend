@@ -6,6 +6,10 @@ export interface Course {
   description: string;
   created_at: Date;
   updated_at: Date;
+
+  participants?: number;
+  rating?: number;
+  category_id: string;
 }
 
 export interface Section {

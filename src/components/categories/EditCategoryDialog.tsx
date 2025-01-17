@@ -1,4 +1,4 @@
-// AddCategoryDialog.tsx
+// EditCategoryDialog.tsx
 import React from "react";
 import {
   Dialog,
@@ -17,36 +17,40 @@ import { Category } from "@/services/categoryService";
 import { Separator } from "@/components/ui/separator";
 import { IconSelector } from "../IconSelector";
 
-interface AddCategoryDialogProps {
-  parentCategory?: Category;
-  onAdd: (name: string, icon: string | null, parentId?: string | null) => Promise<void>;
+interface EditCategoryDialogProps {
+  category: Category;
+  onEdit: (
+    categoryId: string,
+    newName: string,
+    newIcon: string | null
+  ) => Promise<void>;
   trigger: React.ReactElement;
 }
 
-export const AddCategoryDialog: React.FC<AddCategoryDialogProps> = ({
-  parentCategory,
-  onAdd,
+export const EditCategoryDialog: React.FC<EditCategoryDialogProps> = ({
+  category,
+  onEdit,
   trigger,
 }) => {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [open, setOpen] = React.useState(false);
-  const [selectedIcon, setSelectedIcon] = React.useState<string | null>(null);
+  const [selectedIcon, setSelectedIcon] = React.useState<string | null>(
+    category.icon
+  );
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = e.currentTarget as HTMLFormElement;
     const nameInput = form.elements.namedItem("name") as HTMLInputElement;
-    const name = nameInput.value.trim();
-    
-    if (name) {
+    const newName = nameInput.value.trim();
+
+    if (newName) {
       setIsSubmitting(true);
       try {
-        await onAdd(name, selectedIcon, parentCategory?.id);
+        await onEdit(category.id, newName, selectedIcon);
         setOpen(false);
-        form.reset();
-        setSelectedIcon(null);
       } catch (error) {
-        console.error('Failed to add category:', error);
+        console.error("Failed to edit category:", error);
       } finally {
         setIsSubmitting(false);
       }
@@ -58,11 +62,9 @@ export const AddCategoryDialog: React.FC<AddCategoryDialogProps> = ({
       <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>
-            Dodaj {parentCategory?.name ? `podkategorię do "${parentCategory.name}"` : 'nową kategorię'}
-          </DialogTitle>
+          <DialogTitle>Edytuj kategorię</DialogTitle>
           <DialogDescription>
-            Wypełnij poniższy formularz aby dodać kategorię
+            Zmień nazwę lub ikonę kategorii &quot;{category.name}&quot;
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
@@ -71,15 +73,15 @@ export const AddCategoryDialog: React.FC<AddCategoryDialogProps> = ({
               <Label htmlFor="name">Nazwa kategorii</Label>
               <Input
                 className="mt-2"
-                id="name" 
+                id="name"
                 name="name"
-                placeholder="Wpisz nazwę kategorii"
+                defaultValue={category.name}
                 required
               />
             </div>
-            
+
             <Separator />
-            
+
             <div>
               <Label>Ikona kategorii (opcjonalnie)</Label>
               <div className="mt-2">
@@ -97,13 +99,13 @@ export const AddCategoryDialog: React.FC<AddCategoryDialogProps> = ({
               variant="secondary"
               onClick={() => {
                 setOpen(false);
-                setSelectedIcon(null);
+                setSelectedIcon(category.icon);
               }}
             >
               Anuluj
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Dodawanie..." : "Dodaj kategorię"}
+              {isSubmitting ? "Zapisywanie..." : "Zapisz zmiany"}
             </Button>
           </DialogFooter>
         </form>

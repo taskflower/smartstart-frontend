@@ -1,9 +1,11 @@
-import { collection, getDocs, addDoc, query, where, doc, deleteDoc } from "firebase/firestore";
+// categoryService.ts
+import { collection, getDocs, addDoc, query, where, doc, deleteDoc, updateDoc } from "firebase/firestore";
 import { db } from "./firebase";
 
 export interface Category {
   id: string;
   name: string;
+  icon: string | null;
   parent_id: string | null;
   items?: Category[];
 }
@@ -36,9 +38,14 @@ export async function fetchAllCategories(): Promise<Category[]> {
   return buildTree(null);
 }
 
-export async function addCategory(name: string, parentId?: string | null): Promise<void> {
+export async function addCategory(
+  name: string, 
+  icon: string | null, 
+  parentId?: string | null
+): Promise<void> {
   await addDoc(collection(db, "categories"), {
     name,
+    icon,
     parent_id: parentId ?? null,
   });
 }
@@ -53,4 +60,16 @@ export async function deleteCategory(categoryId: string): Promise<void> {
   }
   
   await deleteDoc(doc(db, "categories", categoryId));
+}
+
+export async function updateCategory(
+  categoryId: string, 
+  newName: string,
+  newIcon: string | null
+): Promise<void> {
+  const categoryRef = doc(db, "categories", categoryId);
+  await updateDoc(categoryRef, {
+    name: newName,
+    icon: newIcon
+  });
 }
