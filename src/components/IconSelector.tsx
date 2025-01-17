@@ -1,71 +1,6 @@
-import React from 'react';
+import React from "react";
 import { cn } from "@/services/utils";
-import {
-  Book,
-  BookOpen,
-  BookOpenCheck,
-  GraduationCap,
-  School,
-  NotebookPen,
-  PenTool,
-  Pencil,
-  Calculator,
-  BrainCircuit,
-  Atom,
-  Binary,
-  FileSpreadsheet,
-  FileText,
-  FlaskConical,
-  Globe2,
-  LanguagesIcon,
-  Library,
-  Lightbulb,
-  Microscope,
-  Music2,
-  Palette,
-  Pi,
-  Puzzle,
-  ScrollText,
-  Speech,
-  Trophy,
-  Upload,
-  Users,
-  Video,
-  type LucideIcon
-} from 'lucide-react';
-
-export const EDUCATION_ICONS: { [key: string]: LucideIcon } = {
-  Book,
-  BookOpen,
-  BookOpenCheck,
-  GraduationCap,
-  School,
-  NotebookPen,
-  PenTool,
-  Pencil,
-  Calculator,
-  BrainCircuit,
-  Atom,
-  Binary,
-  FileSpreadsheet,
-  FileText,
-  FlaskConical,
-  Globe2,
-  Languages: LanguagesIcon,
-  Library,
-  Lightbulb,
-  Microscope,
-  Music2,
-  Palette,
-  Pi,
-  Puzzle,
-  ScrollText,
-  Speech,
-  Trophy,
-  Upload,
-  Users,
-  Video
-};
+import { EDUCATION_ICONS } from "@/constants/icons";
 
 interface IconSelectorProps {
   selectedIcon: string | null;
@@ -83,6 +18,7 @@ export const IconSelector: React.FC<IconSelectorProps> = ({
         return (
           <button
             key={name}
+            type="button" // Ustawienie typu na 'button'
             onClick={() => onSelectIcon(name)}
             className={cn(
               "p-2 rounded-lg flex flex-col items-center gap-1 hover:bg-gray-100 transition-colors",
@@ -97,3 +33,6 @@ export const IconSelector: React.FC<IconSelectorProps> = ({
     </div>
   );
 };
+// eslint-disable-next-line react-refresh/only-export-components
+export { EDUCATION_ICONS };
+

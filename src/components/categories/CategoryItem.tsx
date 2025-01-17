@@ -3,8 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Plus, Minus, Loader2, Trash2, Pencil, LucideIcon } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Category } from "@/services/categoryService";
-import { AddCategoryDialog } from "./AddCategoryDialog";
-import { EditCategoryDialog } from "./EditCategoryDialog";
+import { AddCategoryDialog } from "./dialogs/AddCategoryDialog";
+import { EditCategoryDialog } from "./dialogs/EditCategoryDialog";
 import { EDUCATION_ICONS } from "../IconSelector";
 
 interface CategoryItemProps {

@@ -10,7 +10,8 @@ import {
   Category,
 } from "@/services/categoryService";
 import { CategoryItem } from "@/components/categories/CategoryItem";
-import { AddCategoryDialog } from "@/components/categories/AddCategoryDialog";
+import { AddCategoryDialog } from "@/components/categories/dialogs/AddCategoryDialog";
+
 
 const CategoriesPage = () => {
   const [categories, setCategories] = useState<Category[]>([]);
