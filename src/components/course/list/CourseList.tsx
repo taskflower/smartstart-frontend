@@ -12,7 +12,9 @@ export const CourseList: React.FC<CourseListProps & {courses: Course[]}> = ({
   courses,
   categories,
 }) => {
-  const getCategoryInfo = (categoryId: string) => {
+  const getCategoryInfo = (categoryId: string | null) => {
+    if (!categoryId) return { name: "Brak kategorii", icon: null };
+
     interface CategoryInfo {
       name: string;
       icon: string | null;

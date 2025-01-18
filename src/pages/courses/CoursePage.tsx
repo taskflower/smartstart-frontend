@@ -11,16 +11,7 @@ import type {
 } from "@/types/moodle";
 import AuthLayout from "@/components/AuthLayout";
 import { Alert } from "@/components/ui/alert";
-import {
-  fetchCourse,
-  fetchSections,
-  fetchActivities,
-  fetchResources,
-  addSection,
-  addActivity,
-  addResource,
-  toggleVisibility,
-} from "@/services/courseService";
+
 import {
   CourseHeader,
   SectionCard,
@@ -29,6 +20,22 @@ import {
   ResourceSettingsDialog,
 } from "@/components/course";
 import ContentItem from "@/components/course/ContentItem";
+import { fetchCourse } from "@/services/course/courseQueries";
+import { 
+  addSection, 
+  fetchSections,
+  toggleSectionVisibility 
+} from "@/services/course/sectionQueries";
+import { 
+  addActivity, 
+  fetchActivities,
+  toggleActivityVisibility 
+} from "@/services/course/activityQueries";
+import { 
+  addResource, 
+  fetchResources,
+  toggleResourceVisibility 
+} from "@/services/course/resourceQueries";
 
 const CoursePage = () => {
   const { courseId } = useParams<{ courseId: string }>();
@@ -46,12 +53,8 @@ const CoursePage = () => {
   // UI state for dialogs
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isResourceSettingsOpen, setIsResourceSettingsOpen] = useState(false);
-  const [selectedActivity, setSelectedActivity] = useState<Activity | null>(
-    null
-  );
-  const [selectedResource, setSelectedResource] = useState<Resource | null>(
-    null
-  );
+  const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
+  const [selectedResource, setSelectedResource] = useState<Resource | null>(null);
 
   useEffect(() => {
     loadCourseData();
@@ -127,10 +130,7 @@ const CoursePage = () => {
     }
   };
 
-  const handleAddActivity = async (
-    sectionId: string,
-    data: AddActivityData
-  ) => {
+  const handleAddActivity = async (sectionId: string, data: AddActivityData) => {
     try {
       const newActivity = await addActivity(sectionId, data);
       setState((prev) => ({
@@ -148,10 +148,7 @@ const CoursePage = () => {
     }
   };
 
-  const handleAddResource = async (
-    sectionId: string,
-    data: AddResourceData
-  ) => {
+  const handleAddResource = async (sectionId: string, data: AddResourceData) => {
     try {
       const newResource = await addResource(sectionId, data);
       setState((prev) => ({
@@ -172,7 +169,18 @@ const CoursePage = () => {
     currentVisibility: boolean
   ) => {
     try {
-      await toggleVisibility(type, id, currentVisibility);
+      // Wywołujemy odpowiednią funkcję w zależności od typu
+      switch (type) {
+        case "section":
+          await toggleSectionVisibility(id, currentVisibility);
+          break;
+        case "activity":
+          await toggleActivityVisibility(id, currentVisibility);
+          break;
+        case "resource":
+          await toggleResourceVisibility(id, currentVisibility);
+          break;
+      }
 
       setState((prev) => {
         switch (type) {

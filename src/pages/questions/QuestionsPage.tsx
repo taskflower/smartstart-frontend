@@ -13,12 +13,13 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useNavigate } from "react-router-dom";
-import { 
-  fetchQuestions, 
-  addQuestion, 
-  deleteQuestionWithAnswers 
+import {
+  fetchQuestions,
+  addQuestion,
+  deleteQuestionWithAnswers,
 } from "@/services/questionService";
-import { fetchAllCourses, fetchSections } from "@/services/courseService";
+import { fetchAllCourses } from "@/services/course/courseQueries";
+import { fetchSections } from "@/services/course/sectionQueries";
 
 export default function QuestionsPage() {
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -27,7 +28,7 @@ export default function QuestionsPage() {
   const [isAdding, setIsAdding] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   const [newQuestion, setNewQuestion] = useState<CreateQuestionData>({
     course_id: "",
     section_id: "",
@@ -36,7 +37,7 @@ export default function QuestionsPage() {
     question_text: "",
     default_grade: 1,
   });
-  
+
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -45,7 +46,7 @@ export default function QuestionsPage() {
         setIsLoading(true);
         const [questionsData, coursesData] = await Promise.all([
           fetchQuestions(),
-          fetchAllCourses()
+          fetchAllCourses(),
         ]);
 
         setQuestions(questionsData);
@@ -64,7 +65,7 @@ export default function QuestionsPage() {
   useEffect(() => {
     const loadSections = async () => {
       if (!newQuestion.course_id) return;
-      
+
       try {
         const sectionsData = await fetchSections(newQuestion.course_id);
         setSections(sectionsData);
@@ -78,7 +79,11 @@ export default function QuestionsPage() {
   }, [newQuestion.course_id]);
 
   const handleAddQuestion = async () => {
-    if (!newQuestion.course_id || !newQuestion.section_id || !newQuestion.question_text) {
+    if (
+      !newQuestion.course_id ||
+      !newQuestion.section_id ||
+      !newQuestion.question_text
+    ) {
       setError("Wypełnij wszystkie pola");
       return;
     }
@@ -119,104 +124,105 @@ export default function QuestionsPage() {
 
   return (
     <AuthLayout>
-     
-        <div className="flex justify-between mb-6">
-          <h1 className="text-2xl font-bold">Bank pytań</h1>
-          <Button onClick={() => setIsAdding(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Dodaj pytanie
-          </Button>
+      <div className="flex justify-between mb-6">
+        <h1 className="text-2xl font-bold">Bank pytań</h1>
+        <Button onClick={() => setIsAdding(true)}>
+          <Plus className="mr-2 h-4 w-4" />
+          Dodaj pytanie
+        </Button>
+      </div>
+
+      {error && (
+        <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6">
+          {error}
         </div>
+      )}
 
-        {error && (
-          <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6">
-            {error}
-          </div>
-        )}
-
-        {isAdding && (
-          <div className="mb-6 p-4 border rounded">
-            <div className="space-y-4">
-              <Select
-                value={newQuestion.course_id}
-                onValueChange={(value) =>
-                  setNewQuestion({ ...newQuestion, course_id: value })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Wybierz kurs" />
-                </SelectTrigger>
-                <SelectContent>
-                  {courses.map((course) => (
-                    <SelectItem key={course.id} value={course.id}>
-                      {course.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Select
-                value={newQuestion.section_id}
-                onValueChange={(value) =>
-                  setNewQuestion({ ...newQuestion, section_id: value })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Wybierz sekcję" />
-                </SelectTrigger>
-                <SelectContent>
-                  {sections.map((section) => (
-                    <SelectItem key={section.id} value={section.id}>
-                      {section.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Textarea
-                placeholder="Treść pytania"
-                value={newQuestion.question_text}
-                onChange={(e) =>
-                  setNewQuestion({ ...newQuestion, question_text: e.target.value })
-                }
-              />
-
-              <div className="flex gap-2">
-                <Button onClick={handleAddQuestion}>Zapisz</Button>
-                <Button variant="outline" onClick={() => setIsAdding(false)}>
-                  Anuluj
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        <div className="grid gap-4">
-          {questions.map((question) => (
-            <div
-              key={question.id}
-              className="p-4 border rounded flex justify-between items-center"
+      {isAdding && (
+        <div className="mb-6 p-4 border rounded">
+          <div className="space-y-4">
+            <Select
+              value={newQuestion.course_id}
+              onValueChange={(value) =>
+                setNewQuestion({ ...newQuestion, course_id: value })
+              }
             >
-              <div>{question.question_text}</div>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => navigate(`/questions/${question.id}/answers`)}
-                >
-                  Zarządzaj odpowiedziami
-                </Button>
-                <Button
-                  variant="destructive"
-                  size="icon"
-                  onClick={() => handleDeleteQuestion(question.id)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
+              <SelectTrigger>
+                <SelectValue placeholder="Wybierz kurs" />
+              </SelectTrigger>
+              <SelectContent>
+                {courses.map((course) => (
+                  <SelectItem key={course.id} value={course.id}>
+                    {course.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={newQuestion.section_id}
+              onValueChange={(value) =>
+                setNewQuestion({ ...newQuestion, section_id: value })
+              }
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Wybierz sekcję" />
+              </SelectTrigger>
+              <SelectContent>
+                {sections.map((section) => (
+                  <SelectItem key={section.id} value={section.id}>
+                    {section.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Textarea
+              placeholder="Treść pytania"
+              value={newQuestion.question_text}
+              onChange={(e) =>
+                setNewQuestion({
+                  ...newQuestion,
+                  question_text: e.target.value,
+                })
+              }
+            />
+
+            <div className="flex gap-2">
+              <Button onClick={handleAddQuestion}>Zapisz</Button>
+              <Button variant="outline" onClick={() => setIsAdding(false)}>
+                Anuluj
+              </Button>
             </div>
-          ))}
+          </div>
         </div>
-     
+      )}
+
+      <div className="grid gap-4">
+        {questions.map((question) => (
+          <div
+            key={question.id}
+            className="p-4 border rounded flex justify-between items-center"
+          >
+            <div>{question.question_text}</div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => navigate(`/questions/${question.id}/answers`)}
+              >
+                Zarządzaj odpowiedziami
+              </Button>
+              <Button
+                variant="destructive"
+                size="icon"
+                onClick={() => handleDeleteQuestion(question.id)}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        ))}
+      </div>
     </AuthLayout>
   );
 }

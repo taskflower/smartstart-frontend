@@ -5,8 +5,8 @@ import { Category } from "@/services/categoryService";
 import { CourseList } from "./list";
 import { Button } from "@/components/ui/button";
 import PageLoader from "@/components/PageLoader";
-import { fetchPaginatedCourses } from "@/services/courseService";
 import { PAGE_SIZE } from "@/constants/pagination";
+import { fetchPaginatedCourses } from "@/services/course/courseQueries";
 
 interface PaginatedCoursesListProps {
   categories: Category[];
